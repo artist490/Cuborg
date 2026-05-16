@@ -1,169 +1,378 @@
-# Personal Secure Vault
+# 🔐 Personal Secure Vault
 
-Локальный offline-first менеджер паролей и приватных данных. Приложение работает в браузере, использует React, Vite, Web Crypto API и SQLite через WebAssembly (`sql.js`).
+**Personal Secure Vault** — это полностью локальный менеджер паролей и приватных данных, который работает прямо в браузере.
 
-Главная идея: чувствительные поля шифруются до записи в SQLite. База хранится локально в IndexedDB и может экспортироваться/импортироваться как сырой зашифрованный `.db` файл.
+Он не отправляет данные на сервер, не требует аккаунта и хранит базу только на вашем устройстве. Чувствительные поля шифруются **до записи в SQLite**, а сама база может быть экспортирована как обычный зашифрованный `.db` файл.
 
-## Возможности
+> 🧠 Коротко: это offline-first PWA vault на **React + Web Crypto API + SQLite WASM**.
 
-- Полностью локальная работа без серверной части
-- PWA-архитектура
-- React functional components и hooks
-- Чистый CSS без Tailwind, Bootstrap, shadcn/ui и других UI-фреймворков
-- SQLite внутри браузера через WASM (`sql.js`)
-- Шифрование чувствительных полей через AES-GCM
-- Уникальный 12-byte IV для каждого зашифрованного значения
-- Вывод ключа из мастер-пароля через PBKDF2
-- Проверка мастер-пароля через `system_auth` и зашифрованную строку `VAULT_OK`
-- Сохранение базы в IndexedDB
-- Экспорт/импорт зашифрованной `.db` базы
-- Автоочистка clipboard после копирования
-- Автоблокировка vault при бездействии
-- Блокировка при длительном уходе со вкладки
-- Content Security Policy для ограничения внешних источников
+---
 
-## Быстрый старт
+## ✨ Что умеет
 
-Установить зависимости:
+- 🔒 **Локальное шифрование** через Web Crypto API
+- 🧬 **PBKDF2 + SHA-256** для вывода ключа из мастер-пароля
+- 🛡️ **AES-GCM 256-bit** для шифрования данных
+- 🎲 Уникальный **12-byte IV** для каждого зашифрованного значения
+- 🗄️ **SQLite внутри браузера** через WebAssembly (`sql.js`)
+- 💾 Сохранение базы в **IndexedDB**
+- 📤 Экспорт зашифрованной базы в `.db`
+- 📥 Импорт `.db` обратно в приложение
+- 🧹 Автоочистка clipboard после копирования
+- ⏱️ Автоблокировка при бездействии
+- 👁️ Блокировка при длительном уходе со вкладки
+- 📵 Полностью offline-first подход
+- 🎨 Чистый CSS без UI-фреймворков
+- ⚛️ React functional components + hooks
+- 📱 PWA-структура
+
+---
+
+## 🖼️ Скриншоты
+
+> Пока скриншоты не добавлены в репозиторий.  
+> Рекомендуемые файлы:
+
+```text
+docs/screenshots/auth.png
+docs/screenshots/dashboard.png
+docs/screenshots/settings.png
+```
+
+После добавления можно вставить:
+
+```md
+![Auth screen](docs/screenshots/auth.png)
+![Dashboard](docs/screenshots/dashboard.png)
+![Settings](docs/screenshots/settings.png)
+```
+
+---
+
+## 🚀 Быстрый старт
+
+### 1. Установить зависимости
 
 ```bash
 npm install
 ```
 
-Запустить режим разработки:
+### 2. Запустить приложение
 
 ```bash
 npm run dev
 ```
 
-Откройте локальный адрес, который покажет Vite. Обычно это:
+После запуска Vite покажет локальный адрес. Обычно:
 
 ```text
 http://localhost:5173/
 ```
 
-Собрать production-версию:
+### 3. Собрать production-версию
 
 ```bash
 npm run build
 ```
 
-Предпросмотр production-сборки:
+### 4. Посмотреть production-сборку
 
 ```bash
 npm run preview
 ```
 
-## Запуск на Windows
+---
 
-В проекте есть два `.bat` файла:
+## 🪟 Запуск на Windows
 
-- `install-and-run.bat` — устанавливает зависимости с retry-настройками npm и запускает Vite.
-- `run-vault.bat` — запускает приложение, если зависимости уже установлены.
+Для удобства есть два `.bat` файла:
 
-Если `npm install` падает из-за VPN или нестабильной сети, переключите VPN-сервер и запустите `install-and-run.bat` снова.
+| Файл | Назначение |
+|---|---|
+| `install-and-run.bat` | Устанавливает зависимости и запускает приложение |
+| `run-vault.bat` | Запускает приложение, если зависимости уже установлены |
 
-## Модель безопасности
+Если `npm install` падает из-за VPN или нестабильной сети:
 
-Это локальный персональный vault, а не облачный менеджер паролей.
+1. Переключите VPN-сервер.
+2. Запустите `install-and-run.bat` снова.
+3. Или выполните вручную:
 
-### Криптография
+```bash
+npm install --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+```
 
-- Key derivation: PBKDF2
-- Hash: SHA-256
-- Iterations: 100,000
-- Encryption: AES-GCM
-- Key length: 256-bit
-- IV: случайный 12-byte IV на каждое шифрование
-- Формат хранения: `base64(iv).base64(ciphertext)`
-- Проверка входа: расшифровка `VAULT_OK` из таблицы `system_auth`
+---
 
-### Что защищается
+## 🔐 Как работает безопасность
 
-- Чувствительные поля шифруются до записи в SQLite.
-- Мастер-пароль не сохраняется.
-- AES-ключ не сохраняется и существует только в памяти во время unlocked-сессии.
-- Экспортированный `.db` файл содержит зашифрованные значения.
-- Clipboard очищается после копирования и при блокировке vault.
-- Vault автоматически блокируется при бездействии.
+Приложение построено вокруг простой идеи:
 
-### Что не защищается
+> **SQLite хранит только зашифрованные чувствительные данные.**
 
-Приложение не защищает от:
+Мастер-пароль не сохраняется. Из него в памяти браузера выводится AES-ключ. Этот ключ используется для расшифровки и шифрования данных только во время разблокированной сессии.
 
-- вредоносного ПО на устройстве
-- опасных браузерных расширений
-- скомпрометированного браузера
-- keylogger-ов
-- физического доступа к уже разблокированной сессии
-- скриншотов и записи экрана
-- слабого или повторно используемого мастер-пароля
+---
 
-Если мастер-пароль потерян, восстановить vault невозможно.
+## 🧬 Криптографическая схема
 
-## Структура проекта
+### 🔑 Вывод ключа
+
+Из мастер-пароля создается AES-ключ:
+
+```text
+PBKDF2
+Hash: SHA-256
+Iterations: 100,000
+Key length: 256-bit
+Salt: unique random salt
+```
+
+### 🛡️ Шифрование данных
+
+Каждое чувствительное поле шифруется отдельно:
+
+```text
+AES-GCM
+Key: 256-bit
+IV: random 12 bytes per encryption
+```
+
+### 📦 Формат хранения
+
+Зашифрованные значения сохраняются в SQLite как строка:
+
+```text
+IV_in_Base64.Ciphertext_in_Base64
+```
+
+Пример формата:
+
+```text
+MDEyMzQ1Njc4OWFi.Y2lwaGVydGV4dA==
+```
+
+### ✅ Проверка мастер-пароля
+
+В SQLite есть таблица `system_auth`.
+
+Она хранит:
+
+- salt
+- encrypted verifier
+
+Verifier — это строка:
+
+```text
+VAULT_OK
+```
+
+При входе приложение пытается расшифровать `VAULT_OK`. Если расшифровка успешна — пароль правильный. Если нет — доступ запрещен.
+
+---
+
+## 🗄️ Где хранятся данные
+
+Данные хранятся локально:
+
+```text
+Browser IndexedDB
+└── encrypted SQLite .db
+```
+
+При экспорте вы получаете обычный `.db` файл, но чувствительные поля внутри остаются зашифрованными.
+
+---
+
+## 🧱 Архитектура проекта
 
 ```text
 src/
   components/
-    AuthScreen.jsx
-    Dashboard.jsx
-    Sidebar.jsx
-    VaultItem.jsx
-    VaultList.jsx
+    AuthScreen.jsx      # экран создания/разблокировки vault
+    Dashboard.jsx       # основная рабочая область
+    Sidebar.jsx         # навигация по категориям
+    VaultList.jsx       # список записей и поиск
+    VaultItem.jsx       # строка записи, copy-to-clipboard
+
   crypto/
-    cryptoEngine.js
+    cryptoEngine.js     # PBKDF2, AES-GCM, salt, IV, verifier
+
   db/
-    dbEngine.js
+    dbEngine.js         # sql.js, SQLite, IndexedDB, import/export
+
   styles/
-    index.css
-    auth.css
-    dashboard.css
-  App.jsx
-  main.jsx
+    index.css           # reset, variables, global UI primitives
+    auth.css            # экран авторизации
+    dashboard.css       # layout, sidebar, list, editor
+
+  App.jsx               # lifecycle, unlock/lock, CRUD, import/export
+  main.jsx              # React entrypoint + service worker registration
 ```
 
-## Основные файлы
+---
 
-- `src/crypto/cryptoEngine.js` — PBKDF2, AES-GCM, salt/IV helpers, auth verifier.
-- `src/db/dbEngine.js` — загрузка `sql.js`, IndexedDB persistence, миграции, SQL-запросы.
-- `src/App.jsx` — жизненный цикл vault, unlock/lock, CRUD, import/export.
-- `src/components/` — интерфейс приложения.
-- `src/styles/` — чистый CSS-дизайн без UI-фреймворков.
-- `public/sw.js` — service worker для PWA.
+## 🧩 Основные технологии
 
-## Offline/PWA поведение
+| Область | Технология |
+|---|---|
+| Frontend | React |
+| Build tool | Vite |
+| Styling | Pure CSS |
+| Browser database | SQLite WASM через `sql.js` |
+| Local storage | IndexedDB |
+| Crypto | Web Crypto API |
+| PWA | Manifest + Service Worker |
 
-Service worker кэширует только app shell и статические build assets. `.db` файлы намеренно не кэшируются.
+---
 
-## Перед публикацией на GitHub
+## 🛡️ Что защищается
 
-Проверить сборку:
+✅ Чувствительные поля шифруются до записи в SQLite  
+✅ Мастер-пароль не сохраняется  
+✅ AES-ключ не сохраняется  
+✅ Экспортированный `.db` остается зашифрованным  
+✅ Clipboard очищается после копирования  
+✅ Vault блокируется при бездействии  
+✅ Vault блокируется при длительном уходе со вкладки  
+✅ Service worker не кэширует `.db` файлы  
+✅ CSP ограничивает внешние источники  
+
+---
+
+## ⚠️ Чего приложение не может защитить
+
+Важно понимать границы безопасности.
+
+Приложение **не защищает** от:
+
+- 🦠 вредоносного ПО на устройстве
+- 🧩 опасных браузерных расширений
+- ⌨️ keylogger-ов
+- 📸 скриншотов и записи экрана
+- 👤 физического доступа к уже разблокированной сессии
+- 🌐 скомпрометированного браузера
+- 🔑 слабого мастер-пароля
+
+Если мастер-пароль потерян, восстановить vault невозможно.
+
+---
+
+## 📵 Offline-first
+
+Приложение спроектировано для локальной работы.
+
+Service worker кэширует:
+
+- app shell
+- JS/CSS assets
+- WASM assets
+- manifest/icon
+
+Service worker **не кэширует**:
+
+- `.db`
+- экспортированные базы
+- произвольные пользовательские файлы
+
+---
+
+## 🧪 Проверка перед публикацией
+
+```bash
+npm install
+npm run build
+```
+
+Если build прошел успешно, проект готов к публикации.
+
+---
+
+## 🚫 Что не нужно коммитить
+
+Уже добавлено в `.gitignore`:
+
+```text
+node_modules/
+dist/
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+```
+
+---
+
+## 🏷️ Рекомендуемые GitHub Topics
+
+Добавьте эти topics в настройках репозитория:
+
+```text
+password-manager
+vault
+web-crypto
+sqlite
+sqljs
+react
+vite
+pwa
+offline-first
+encryption
+aes-gcm
+pbkdf2
+privacy
+cybersecurity
+local-first
+indexeddb
+```
+
+Это поможет людям находить проект через GitHub topics и поиск.
+
+---
+
+## 🗺️ Roadmap
+
+Идеи для будущих улучшений:
+
+- [ ] Генератор надежных паролей
+- [ ] Оценка надежности сохраненных паролей
+- [ ] Импорт из CSV
+- [ ] Экспорт выбранных записей
+- [ ] Автоматическая очистка decrypted state после закрытия редактора
+- [ ] Дополнительный encrypted search index
+- [ ] GitHub Pages demo
+- [ ] Поддержка светлой темы
+- [ ] Локальная проверка повторяющихся паролей
+- [ ] Recovery warning screen перед созданием vault
+
+---
+
+## 🤝 Вклад в проект
+
+Pull requests приветствуются.
+
+Перед отправкой изменений:
 
 ```bash
 npm run build
 ```
 
-Не коммитить:
+Для security-related изменений желательно описывать:
 
-- `node_modules/`
-- `dist/`
-- экспортированные `.db` файлы
-- локальные `.env` файлы
+- какую угрозу изменение закрывает
+- какие данные затрагиваются
+- меняется ли формат базы
+- нужна ли миграция
 
-Эти файлы уже добавлены в `.gitignore`.
+---
 
-## Публикация на GitHub
+## 📄 Лицензия
 
-```bash
-git init
-git add .
-git commit -m "Initial secure vault app"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/personal-secure-vault.git
-git push -u origin main
-```
+MIT. Подробнее см. [LICENSE](LICENSE).
 
-## Лицензия
+---
 
-MIT
+## ⭐ Если проект полезен
+
+Поставьте ⭐ на GitHub — это помогает проекту появляться чаще в поиске и рекомендациях.
